@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+  <meta name="description" content="在线五子棋对战">
+  <meta name="author" content="hichenming">
+  <title>在线五子棋对战</title>
+  <link href="../static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="../static/css/main.css" rel="stylesheet" media="screen">
+  <link rel="shortcut icon" href="../static/img/favicon.png">
+  
+</head>
+<body id="mainbody">
+	<div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container">
+                <a class="brand" href="#">在线五子棋对战</a>
+                <div class="nav-collapse" id="nav-collapse">
+                    <ul class="nav">
+                        <li><a href="javascript:;">关于</a></li>
+                    	<li><a href="javascript:;">20人在线</a></li>
+                    	<li><a href="javascript:;">15个房间</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+        </div>
+    </div><!-- end  navbar-->
+
+    <div class="container-fluid">
+    	<div class="row-fluid">
+    		<div class="span9" id="game-div">
+    			<div id="gamebar-div">
+    				<div id="piece_sign_top"><img src="../static/img/white.png" /></div>
+    				<div id="piece_sign_bottom"><img src="../static/img/black.png" /></div>
+    			</div>
+    			<canvas id="game-canvas" width="460px" height="460px" ></canvas>
+    		</div>
+    		<div class="span3" id="gamestatus-div">
+
+    		</div>
+    	</div>
+
+    </div>
+
+	<footer class="footer">
+            <p>
+                &copy; <a href="http://lztian.com">zaitian </a>2013
+            </p>
+        </footer>
+    </div>
+    <script src="../static/js/jquery-1.8.3.min.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
+    <script src="../static/js/Game.js"></script>
+    <script type="text/javascript">
+    	gamec = new GameCanvas();
+
+    	function getCurPosition(e) {  
+		    var x, y; 
+		    if (e.pageX != undefined && e.pageY != undefined) {  
+		      x = e.pageX;
+		      y = e.pageY; 
+		    } else {  
+		      x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+		      y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+		    }  
+		    x -= gamec.canvas.offsetLeft;
+		    y -= gamec.canvas.offsetTop;
+		    return [x, y];
+	  	} 
+
+	  	function canvasClickHandler(e){
+	  		var canvas = document.getElementById('game-canvas');
+	  		var pos = getCurPosition(e);
+			var cursorx = pos[0];
+			var cursory = pos[1];
+			var start_col = Math.floor((cursorx-gamec.out_width) / gamec.margin);
+			var start_row = Math.floor((cursory-gamec.out_width) / gamec.margin);
+			if (((cursorx-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
+				start_col++;
+			}
+			if (((cursory-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
+				start_row++;
+			}
+			return gamec.drawPiece(start_row, start_col, 1);
+	  	}
+
+    	$(document).ready(function () {			
+			gamec.canvas.addEventListener("click", canvasClickHandler, false);
+			gamec.drawGrid();
+                    
+		});
+
+        
+
+    </script>
+</body>
+</html>

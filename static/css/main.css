@@ -1,0 +1,44 @@
+body {
+	padding-top: 60px;
+	padding-bottom: 40px;
+}
+.footer {
+	text-align: right;
+	padding: 40px 200px 0 160px;
+}
+.row-fluid {
+	width: 800px;
+	margin: 0 auto;
+}
+.container-fluid {
+	padding: 0px 200px 0 160px;
+	min-height: 400px;
+}
+#game-div {
+	background-color: #DCEAF4;
+	min-height: 450px;
+	border-radius: 10px;
+}
+#gamestatus-div {
+	background-color: #BBD8E9;
+	min-height: 450px;
+	border-radius: 5px;
+}
+#game-canvas {
+	float: right;
+	margin: 4px;
+	cursor: pointer;
+}
+#gamebar-div{
+	width: 120px;
+	min-height: 450px;
+	float: left;
+}
+#piece_sign_top{
+	padding-top: 50px;
+	padding-left: 60px;
+}
+#piece_sign_bottom {
+	padding-top: 300px;
+	padding-left: 60px;
+}
