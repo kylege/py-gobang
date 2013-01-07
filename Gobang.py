@@ -44,4 +44,4 @@ class GameRoom():
 		self.gobang = Gobang()
 		self.status = self.STATUS_WAITING
 		self.room_name = room_name
-		self.user_piece_ids = set(piece_id)
+		self.user_piece_ids = set([piece_id])

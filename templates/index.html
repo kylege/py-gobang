@@ -36,7 +36,10 @@
     			<canvas id="game-canvas" width="460px" height="460px" ></canvas>
     		</div>
     		<div class="span3" id="gamestatus-div">
-
+                <div id="status-div">
+                    <p>当前状态</p>
+                    <span id="status-span"></span>
+                </div>
     		</div>
     	</div>
 
@@ -52,7 +55,8 @@
     <script src="../static/js/bootstrap.min.js"></script>
     <script src="../static/js/Game.js"></script>
     <script type="text/javascript">
-    	gamec = new GameCanvas();
+    	var gamec = new GameCanvas();
+        var is_waiting = {{ is_waiting and 'true;' or 'false;' }}
 
     	function getCurPosition(e) {  
 		    var x, y; 
@@ -69,6 +73,9 @@
 	  	} 
 
 	  	function canvasClickHandler(e){
+            if(is_waiting){
+                return false;
+            }
 	  		var canvas = document.getElementById('game-canvas');
 	  		var pos = getCurPosition(e);
 			var cursorx = pos[0];
@@ -90,7 +97,14 @@
                     
 		});
 
-        
+        if(is_waiting){
+            $('#status-span').text('等待对方上线');
+            $('#game-canvas').css('cursor', 'default');
+        }
+
+        $.get('/poll?room_name={{ cur_room.room_name }}', function(data){
+            alert(data);
+        });
 
     </script>
 </body>
