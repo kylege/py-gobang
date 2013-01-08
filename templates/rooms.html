@@ -18,6 +18,21 @@
 
       </tbody>
   </table>
+
+  <h3 class="rooms-title">正在游戏的房间</h3>
+  <table class="table table-hover" id="rooms-table">
+      <thead><tr><th>序号</th><th>房间</th></tr></thead>
+      <tbody>
+        {% set count = 1 %}
+        {% for (name, room) in rooms.items() %}
+          {% if len(room.user_piece_ids) == 2 %}
+          </tr><td>{{ count }}</td> <td>{{ escape(room.room_name) }} </td></tr>
+          {% set count = count+1 %}
+          {% end %}
+        {% end %}
+
+      </tbody>
+  </table>
 </div>
 
 
