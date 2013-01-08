@@ -11,6 +11,7 @@ ioloop.install()
 
 import tornado
 from tornado import web
+from Config import Config
 
 class EnterRoomHandler(web.RequestHandler):
     # @web.asynchronous
@@ -29,6 +30,7 @@ class EnterRoomHandler(web.RequestHandler):
             all_rooms[room_name] = room
             self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True,
                 all_rooms_count=len(all_rooms),
+                config=Config,
                 )
             if isLog:  print u'第一个进入'
         else:
@@ -47,6 +49,7 @@ class EnterRoomHandler(web.RequestHandler):
                 pubContent([topic,'start,'])
                 self.render('index.html', cur_room=all_rooms[room_name], my_piece_id=my_piece_id, is_waiting=(my_piece_id==2), 
                     all_rooms_count=len(all_rooms),
+                    config=Config
                     )
                 if isLog:  print '游戏开始'
 
