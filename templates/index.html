@@ -134,7 +134,7 @@
                 }
             });
 	  	} 
-
+        //哪一方该下棋的标记
         function initStartSign(){
             var piece_signs = $('#piece_sign_top');
             if(my_piece == 1){
@@ -144,11 +144,13 @@
         }
 
         function getGamePoll(){
-            $.get('/poll?room_name={{ cur_room.room_name }}', function(data){
+            $.get('/poll', function(data){
                 darr = data.data.split(',')
                 if(darr[0] == 'start'){
                     is_waiting = false;
                     $('#status-span').text('对方上线，游戏开始');
+                    gamec.canvas.width = gamec.canvas.width;
+                    gamec.drawGrid();
                     $('#his_status_img').attr('src', status_imgs[his_piece-1]);
                     if(my_piece == 1){  //黑先白后
                         $('#game-canvas').css('cursor', 'pointer');
@@ -198,7 +200,7 @@
                 initStartSign();
             }
 
-            $.get('/alive?room_name={{ cur_room.room_name }}', function(data){
+            $.get('/alive', function(data){
                 return true;
             });
         });

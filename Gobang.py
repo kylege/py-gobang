@@ -30,6 +30,8 @@ class Gobang():
 		if not self.pieces[row][col] == 0:
 			return BasicReturn(False, -1, '该位置已存在棋子。')
 		if self.last_piece and self.last_piece == value:
+			print self.last_piece
+			print self.pieces
 			return BasicReturn(False, -2, '对方还没有下子。')
 		self.pieces[row][col] = value 
 		self.last_piece = value
