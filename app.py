@@ -10,7 +10,7 @@ from zmq.eventloop import zmqstream, ioloop
 ioloop.install()
 
 import tornado
-from tornado import web
+from tornado import web, autoreload
 from Config import Config
 
 class EnterRoomHandler(web.RequestHandler):
@@ -149,7 +149,7 @@ class GameAliveHandler(web.RequestHandler):
             self.finish()
 
     def on_connection_close(self):
-        print 'Alive连接断开'
+        if isLog: print 'Alive连接断开'
         try:
             removeUserFromRoom(self.room_name, [int(self.user_piece)])
         except:
@@ -159,7 +159,7 @@ class GameAliveHandler(web.RequestHandler):
     移除指定房间指定用户
 '''
 def removeUserFromRoom(room_name, user_pieces):
-    if not room_name in all_rooms.keys():
+    if not room_name.encode('UTF-8') in all_rooms.keys():
         return False
     if isLog: print '移除用户:'+','.join([str(u) for u in user_pieces])
     for piece in user_pieces:
@@ -171,12 +171,22 @@ def removeUserFromRoom(room_name, user_pieces):
             del all_rooms[room_name]
     return True
 
+class RoomListHandler(web.RequestHandler):
+
+    def get(self):
+        self.render('rooms.html', 
+                    all_rooms_count=len(all_rooms),
+                    config=Config,
+                    rooms=all_rooms,
+                    )
+
 
 urls = [
-        (r"/room-(.*)", EnterRoomHandler),
+        (r"/room-(\w{1,16})", EnterRoomHandler),
         (r"/poll", GamePollHandler),
         (r"/step", GameStepHandler),
         (r"/alive", GameAliveHandler),
+        (r"/rooms", RoomListHandler),
         ]
 
 settings = dict(
@@ -187,7 +197,6 @@ settings = dict(
 
 isLog = False
 gobang = Gobang()
-# room = GameRoom('test')
 all_rooms = {}
 zmq_addr = 'tcp://127.0.0.1:5005'
 
@@ -203,6 +212,7 @@ def main():
     application = web.Application(urls, **settings)
 
     application.listen(8888)
+    tornado.autoreload.start(tornado.ioloop.IOLoop.instance()) 
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":

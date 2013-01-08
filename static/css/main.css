@@ -50,3 +50,10 @@ body {
 #status-h3 {
 	margin-top: 100px;
 }
+.rooms-title{
+    margin-left: 50px;
+}
+#rooms-table{
+	margin-left: 50px;
+	width: 70%;
+}

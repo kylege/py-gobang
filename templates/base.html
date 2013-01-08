@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+  <meta name="description" content="在线五子棋对战">
+  <meta name="author" content="hichenming">
+  <title>在线五子棋对战</title>
+  <link href="{{config.ConfigStaticPath}}/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="{{config.ConfigStaticPath}}/css/main.css" rel="stylesheet" media="screen">
+  <link rel="shortcut icon" href="{{config.ConfigStaticPath}}/img/favicon.png">
+  
+
+</head>
+<body id="mainbody">
+	<div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+            <div class="container">
+                <a class="brand" href="#">在线五子棋对战</a>
+                <div class="nav-collapse" id="nav-collapse">
+                    <ul class="nav">
+                        <li><a href="javascript:;">关于</a></li>
+                    	<!-- <li><a href="javascript:;">人在线</a></li> -->
+                    	<li><a href="/rooms">共{{ all_rooms_count }}个房间</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+      </div>
+  </div><!-- end  navbar-->
+
+
+  {% block container-fluid %}
+    <div class="container-fluid">
+    </div>
+  {% end %}
+
+
+  <footer class="footer">
+            <p>
+                &copy; zaitian 2013
+            </p>
+  </footer>
+
+  {% block javascript-block %}                      {% end %}
+
+</body>
+</html>
