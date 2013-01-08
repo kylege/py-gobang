@@ -197,6 +197,10 @@
                $('#his_status_img').attr('src', status_imgs[his_piece-1]);
                 initStartSign();
             }
+
+            $.get('/alive?room_name={{ cur_room.room_name }}', function(data){
+                return true;
+            });
         });
     </script>
 </body>

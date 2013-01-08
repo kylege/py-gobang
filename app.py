@@ -118,7 +118,7 @@ class GamePollHandler(web.RequestHandler):
         self.finish()
 
     def on_connection_close(self):
-        print self.room_name + '' + self.user_piece + u'离线'
+        # print self.room_name + '' + self.user_piece + u'离线'
         pubContent([(self.room_name+''+self.user_piece).encode('UTF-8'), 'off,'])
         self.stream.stop_on_recv()
         self.stream.close()
@@ -130,11 +130,30 @@ class GamePollHandler(web.RequestHandler):
         except:
             pass
 
+class GameAliveHandler(web.RequestHandler):
+
+    @web.asynchronous
+    def get(self):
+        self.room_name = self.get_argument('room_name')
+        self.user_piece = self.get_secure_cookie('up')
+        if not self.room_name or not self.user_piece:
+            self.finish()
+
+    def on_connection_close(self):
+        print 'leave room'
+        try:
+            all_rooms[self.room_name].user_piece_ids.remove(int(self.user_piece))
+            if not all_rooms[self.room_name].user_piece_ids:
+                # print u'清空房间'+self.room_name
+                del all_rooms[self.room_name]
+        except:
+            pass
 
 urls = [
         (r"/room-(.*)", EnterRoomHandler),
         (r"/poll", GamePollHandler),
         (r"/step", GameStepHandler),
+        (r"/alive", GameAliveHandler),
         ]
 
 settings = dict(
@@ -153,7 +172,7 @@ zmq_pusher = ctx.socket(zmq.PUB)
 zmq_pusher.bind(zmq_addr)
 
 def pubContent(content):
-    print content
+    # print content
     zmq_pusher.send_multipart(content)
 
 def main():
