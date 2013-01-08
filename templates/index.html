@@ -18,8 +18,8 @@
                 <div class="nav-collapse" id="nav-collapse">
                     <ul class="nav">
                         <li><a href="javascript:;">关于</a></li>
-                    	<li><a href="javascript:;">20人在线</a></li>
-                    	<li><a href="javascript:;">15个房间</a></li>
+                    	<!-- <li><a href="javascript:;">人在线</a></li> -->
+                    	<li><a href="javascript:;">共{{ all_rooms_count }}个房间</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
@@ -30,15 +30,17 @@
     	<div class="row-fluid">
     		<div class="span9" id="game-div">
     			<div id="gamebar-div">
-    				<div id="piece_sign_top"><img src="../static/img/white.png" /></div>
-    				<div id="piece_sign_bottom"><img src="../static/img/black.png" /></div>
+    				<div id="piece_sign_top" class=""><img id="his_status_img" src="" /></div>
+    				<div id="piece_sign_bottom" class=""><img id="my_status_img" src="" /></div>
     			</div>
     			<canvas id="game-canvas" width="460px" height="460px" ></canvas>
     		</div>
     		<div class="span3" id="gamestatus-div">
                 <div id="status-div">
-                    <p>当前状态</p>
-                    <span id="status-span"></span>
+                    <h3>当前状态</h3>
+                    <blockquote>
+                        <span id="status-span" ></span>
+                    </blockquote>
                 </div>
     		</div>
     	</div>
@@ -47,7 +49,7 @@
 
 	<footer class="footer">
             <p>
-                &copy; <a href="http://lztian.com">zaitian </a>2013
+                &copy; zaitian 2013
             </p>
         </footer>
     </div>
@@ -56,8 +58,43 @@
     <script src="../static/js/Game.js"></script>
     <script type="text/javascript">
     	var gamec = new GameCanvas();
-        var is_waiting = {{ is_waiting and 'true;' or 'false;' }}
+        var is_waiting = {{ is_waiting and 'true' or 'false' }};
+        var my_piece = {{ my_piece_id }};
+        var his_piece = {{ my_piece_id == 1 and 2 or 1}};
+        var room_name = '{{ cur_room.room_name }}';
+        var room_status = {{ cur_room.status }};
+        var game_pieces = new Array(); 
+        var status_imgs = ['../static/img/black.png', '../static/img/white.png'];
 
+        for(i=0; i<=gamec.grid_count; i++){
+            game_pieces[i] = new Array();
+            for(j=0; j<=gamec.grid_count; j++){
+                game_pieces[i][j] = 0;
+            }
+        }
+
+        if(is_waiting ){
+            $('#game-canvas').css('cursor', 'default');
+        }
+        if(room_status==0){
+            $('#status-span').text('等待对方上线');
+        }else{
+            $('#status-span').text('游戏开始');
+        }
+
+        function getGridRowCol(pos){
+            var cursorx = pos[0];
+            var cursory = pos[1];
+            var start_col = Math.floor((cursorx-gamec.out_width) / gamec.margin);
+            var start_row = Math.floor((cursory-gamec.out_width) / gamec.margin);
+            if (((cursorx-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
+                start_col++;
+            }
+            if (((cursory-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
+                start_row++;
+            }
+            return [start_row, start_col]
+        }
     	function getCurPosition(e) {  
 		    var x, y; 
 		    if (e.pageX != undefined && e.pageY != undefined) {  
@@ -78,34 +115,89 @@
             }
 	  		var canvas = document.getElementById('game-canvas');
 	  		var pos = getCurPosition(e);
-			var cursorx = pos[0];
-			var cursory = pos[1];
-			var start_col = Math.floor((cursorx-gamec.out_width) / gamec.margin);
-			var start_row = Math.floor((cursory-gamec.out_width) / gamec.margin);
-			if (((cursorx-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
-				start_col++;
-			}
-			if (((cursory-gamec.out_width) % gamec.margin) > (gamec.margin/2)) {
-				start_row++;
-			}
-			return gamec.drawPiece(start_row, start_col, 1);
-	  	}
+			rowcol = getGridRowCol(pos);
+            row = rowcol[0]
+            col = rowcol[1]
+            if(game_pieces[row][col] != 0){
+                return false;
+            }
+            $.post("/step", { pos: rowcol.join(','), room_name: room_name } , function(data){
+                if(data.result){
+                    gamec.drawPiece(rowcol[0], rowcol[1], my_piece);
+                    is_waiting = true;
+                    game_pieces[rowcol[0]][rowcol[1]] = my_piece;
+                    $('#game-canvas').css('cursor', 'default');
+                    $('#piece_sign_bottom').removeClass('arrow-2-right');
+                    $('#piece_sign_top').addClass('arrow-2-right');
+                }else{
+                    alert(data.msg);
+                }
+            });
+	  	} 
 
-    	$(document).ready(function () {			
-			gamec.canvas.addEventListener("click", canvasClickHandler, false);
-			gamec.drawGrid();
-                    
-		});
-
-        if(is_waiting){
-            $('#status-span').text('等待对方上线');
-            $('#game-canvas').css('cursor', 'default');
+        function initStartSign(){
+            var piece_signs = $('#piece_sign_top');
+            if(my_piece == 1){
+                piece_signs = $('#piece_sign_bottom');   
+            }
+            piece_signs.addClass('arrow-2-right');
         }
 
-        $.get('/poll?room_name={{ cur_room.room_name }}', function(data){
-            alert(data);
+        function getGamePoll(){
+            $.get('/poll?room_name={{ cur_room.room_name }}', function(data){
+                darr = data.data.split(',')
+                if(darr[0] == 'start'){
+                    is_waiting = false;
+                    $('#status-span').text('对方上线，游戏开始');
+                    $('#his_status_img').attr('src', status_imgs[his_piece-1]);
+                    if(my_piece == 1){  //黑先白后
+                        $('#game-canvas').css('cursor', 'pointer');
+                    }
+                    initStartSign();
+                    getGamePoll();
+                }else if (darr[0] == 'off'){
+                    is_waiting = true;
+                    $('#status-span').text('对方离线');
+                    $('#game-canvas').css('cursor', 'default');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                }else if (darr[0] == 'end'){
+                    is_waiting = true;
+                    $('#status-span').text('游戏结束');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').removeClass('arrow-2-right');
+                    $('#game-canvas').css('cursor', 'default'); 
+                    console.log(darr)
+                    pid = parseInt(darr[1])
+                    if (pid != my_piece){
+                        row = parseInt(darr[2]);
+                        col = parseInt(darr[3]);
+                        gamec.drawPiece(row, col, his_piece);
+                        game_pieces[row][col] = his_piece;                  
+                    }
+                }else{  //对方下棋
+                    pos = data.data.split(',')
+                    row = parseInt(pos[0]);
+                    col = parseInt(pos[1]);
+                    gamec.drawPiece(row, col, his_piece);
+                    game_pieces[row][col] = his_piece;
+                    $('#game-canvas').css('cursor', 'pointer');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').addClass('arrow-2-right');
+                    is_waiting = false;
+                    getGamePoll();
+                }
+            });
+        }
+        $(document).ready(function () {         
+            gamec.canvas.addEventListener("click", canvasClickHandler, false);
+            gamec.drawGrid();
+            getGamePoll();
+            $('#my_status_img').attr('src', status_imgs[my_piece-1]);
+            if(room_status != 0){
+               $('#his_status_img').attr('src', status_imgs[his_piece-1]);
+                initStartSign();
+            }
         });
-
     </script>
 </body>
 </html>

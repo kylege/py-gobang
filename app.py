@@ -1,4 +1,5 @@
 #encoding=utf8
+#用apt-get install python-tornado安装的不是最新，有bug。要用 pip install tornado
 
 import os
 from Gobang import Gobang, GameRoom
@@ -11,16 +12,6 @@ ioloop.install()
 import tornado
 from tornado import web
 
-
-def pubContent(content):
-    ctx = zmq.Context()
-    s = ctx.socket(zmq.PUB)
-    s.bind(zmq_addr)
-    print '发布 '
-    print content
-    # s.send_multipart(content)
-    s.send_multipart(['testaa1','content'])
-
 class EnterRoomHandler(web.RequestHandler):
     # @web.asynchronous
     def get(self, room_name):
@@ -30,7 +21,9 @@ class EnterRoomHandler(web.RequestHandler):
             self.set_secure_cookie('rn', room_name) #房间名称
             room = GameRoom(room_name, piece_id)
             all_rooms[room_name] = room
-            self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True)
+            self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True,
+                all_rooms_count=len(all_rooms),
+                )
             print '第一个进入'
         else:
             cur_room = all_rooms[room_name]
@@ -45,7 +38,10 @@ class EnterRoomHandler(web.RequestHandler):
                 self.set_secure_cookie('rn', room_name)
                 cur_room.status = GameRoom.STATUS_GOING
                 topic = (room_name+''+str(my_piece_id)).encode('UTF-8')
-                pubContent([topic,'0,0'])
+                pubContent([topic,'start,'])
+                self.render('index.html', cur_room=cur_room, my_piece_id=my_piece_id, is_waiting=(my_piece_id==2), 
+                    all_rooms_count=len(all_rooms),
+                    )
                 print '游戏开始'
 
 '''
@@ -70,52 +66,74 @@ class GameStepHandler(web.RequestHandler):
         if not cur_room.status == GameRoom.STATUS_GOING:
             self.write({'result':False, 'msg':'room not going'})
             self.finish()
-        user_piece = get_secure_cookie('up')
+        user_piece = self.get_secure_cookie('up')
         if not user_piece:
             self.write({'result':False, 'msg':'identity not exists'})
             self.finish()
-        ret = cur_room.addPiece(posarr[0], posarr[1], int(user_piece))
-        if ret.result:
-            pubContent([(room_name+''+user_piece).encode('UTF-8'), pos.encode('UTF-8')])
-            self.write({'result':True})
-        else:
+        ret = cur_room.gobang.addPiece(int(posarr[0]), int(posarr[1]), int(user_piece))
+        if not ret.result:
             self.write({'result':False, 'msg':ret.msg})
+        else:
+            if cur_room.gobang.isGameOver(int(posarr[0]), int(posarr[1])):
+                print room_name+u' 游戏结束'
+                pubContent([(room_name+'1').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
+                pubContent([(room_name+'2').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
+                cur_room.status = GameRoom.STATUS_END
+                print u'清空房间'+room_name
+                del all_rooms[room_name]
+            else:
+                pubContent([(room_name+''+user_piece).encode('UTF-8'), pos.encode('UTF-8')])
+            self.write({'result':True})
 
 
 '''
     长连接拿对方下棋位置
 '''
 class GamePollHandler(web.RequestHandler):
-    @web.asynchronous
-    def get(self):
-        room_name = self.get_argument('room_name')
-        user_piece = self.get_secure_cookie('up')
-        his_piece = user_piece == '1' and '2' or '1'
 
-        topic = (room_name+''+his_piece).encode('UTF-8')
-        print 'sub: '+topic
+    @tornado.web.asynchronous
+    def get(self):
+        self.room_name = self.get_argument('room_name')
+        self.user_piece = self.get_secure_cookie('up')
+        if not self.user_piece:
+            self.write({'result':False, 'msg':'user not valid'})
+            self.finish()
+            return
+        self.his_piece = self.user_piece == '1' and '2' or '1'
+
+        topic = (self.room_name+''+self.his_piece).encode('UTF-8')
+        print '订阅: '+topic
         ctx = zmq.Context.instance()
         s = ctx.socket(zmq.SUB)
         s.connect(zmq_addr)
         s.setsockopt(zmq.SUBSCRIBE, topic)
         self.stream = zmqstream.ZMQStream(s)
+
         self.stream.on_recv(self._handle_reply)
-        # self.finish()
 
     def _handle_reply(self, msg):
         print '接收到消息: '
         print msg
         reply = msg[1]
-        self.stream.close()
         self.write({'result':True, 'code':2, 'data':reply}) # code 1:game start, code 2:game step
+        self.stream.close()
         self.finish()
 
     def on_connection_close(self):
+        print self.room_name + '' + self.user_piece + u'离线'
+        pubContent([(self.room_name+''+self.user_piece).encode('UTF-8'), 'off,'])
         self.stream.stop_on_recv()
+        self.stream.close()
+        all_rooms[self.room_name].user_piece_ids.remove(int(self.user_piece))
+        if not all_rooms[self.room_name].user_piece_ids:
+            print u'清空房间'+self.room_name
+            del all_rooms[self.room_name]
+
 
 urls = [
         (r"/room-(.*)", EnterRoomHandler),
         (r"/poll", GamePollHandler),
+        (r"/step", GameStepHandler),
         ]
 
 settings = dict(
@@ -129,11 +147,19 @@ gobang = Gobang()
 all_rooms = {}
 zmq_addr = 'tcp://127.0.0.1:5005'
 
+ctx = zmq.Context()
+zmq_pusher = ctx.socket(zmq.PUB)
+zmq_pusher.bind(zmq_addr)
+
+def pubContent(content):
+    print content
+    zmq_pusher.send_multipart(content)
+
 def main():
     application = web.Application(urls, **settings)
 
     application.listen(8888)
-    ioloop.IOLoop.instance().start()
+    tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
     main()
