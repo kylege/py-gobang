@@ -24,13 +24,13 @@ class EnterRoomHandler(web.RequestHandler):
             self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True,
                 all_rooms_count=len(all_rooms),
                 )
-            print '第一个进入'
+            # print '第一个进入'
         else:
             cur_room = all_rooms[room_name]
             if len(cur_room.user_piece_ids) == 2: #已经满了
                 readonly = True
                 self.write('房间已被占用')
-                print '房间已被占用'
+                # print '房间已被占用'
             elif len(cur_room.user_piece_ids) == 1:
                 my_piece_id = 1 in cur_room.user_piece_ids and 2 or 1
                 cur_room.user_piece_ids.add(my_piece_id)
@@ -42,7 +42,7 @@ class EnterRoomHandler(web.RequestHandler):
                 self.render('index.html', cur_room=cur_room, my_piece_id=my_piece_id, is_waiting=(my_piece_id==2), 
                     all_rooms_count=len(all_rooms),
                     )
-                print '游戏开始'
+                # print '游戏开始'
 
 '''
     下棋
@@ -75,11 +75,11 @@ class GameStepHandler(web.RequestHandler):
             self.write({'result':False, 'msg':ret.msg})
         else:
             if cur_room.gobang.isGameOver(int(posarr[0]), int(posarr[1])):
-                print room_name+u' 游戏结束'
+                # print room_name+u' 游戏结束'
                 pubContent([(room_name+'1').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
                 pubContent([(room_name+'2').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
                 cur_room.status = GameRoom.STATUS_END
-                print u'清空房间'+room_name
+                # print u'清空房间'+room_name
                 del all_rooms[room_name]
             else:
                 pubContent([(room_name+''+user_piece).encode('UTF-8'), pos.encode('UTF-8')])
@@ -102,7 +102,7 @@ class GamePollHandler(web.RequestHandler):
         self.his_piece = self.user_piece == '1' and '2' or '1'
 
         topic = (self.room_name+''+self.his_piece).encode('UTF-8')
-        print '订阅: '+topic
+        # print '订阅: '+topic
         ctx = zmq.Context.instance()
         s = ctx.socket(zmq.SUB)
         s.connect(zmq_addr)
@@ -112,8 +112,6 @@ class GamePollHandler(web.RequestHandler):
         self.stream.on_recv(self._handle_reply)
 
     def _handle_reply(self, msg):
-        print '接收到消息: '
-        print msg
         reply = msg[1]
         self.write({'result':True, 'code':2, 'data':reply}) # code 1:game start, code 2:game step
         self.stream.close()
@@ -124,10 +122,13 @@ class GamePollHandler(web.RequestHandler):
         pubContent([(self.room_name+''+self.user_piece).encode('UTF-8'), 'off,'])
         self.stream.stop_on_recv()
         self.stream.close()
-        all_rooms[self.room_name].user_piece_ids.remove(int(self.user_piece))
-        if not all_rooms[self.room_name].user_piece_ids:
-            print u'清空房间'+self.room_name
-            del all_rooms[self.room_name]
+        try:
+            all_rooms[self.room_name].user_piece_ids.remove(int(self.user_piece))
+            if not all_rooms[self.room_name].user_piece_ids:
+                # print u'清空房间'+self.room_name
+                del all_rooms[self.room_name]
+        except:
+            pass
 
 
 urls = [
