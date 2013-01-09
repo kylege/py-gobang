@@ -117,7 +117,7 @@
             if(game_pieces[row][col] != 0){
                 return false;
             }
-            $.post("/step", { pos: rowcol.join(','), room_name: room_name } , function(data){
+            $.post("/step?_t="+ new Date().getTime(), { pos: rowcol.join(','), room: room_name, up: my_piece } , function(data){
                 if(data.result){
                     gamec.drawPiece(rowcol[0], rowcol[1], my_piece);
                     is_waiting = true;
@@ -142,7 +142,7 @@
         }
 
         function getGamePoll(){
-            $.get('/poll?_='+new Date().getTime(), function(data){
+            $.get('/poll?room='+room_name+'&up='+my_piece+'&_t='+ new Date().getTime(), function(data){
                 darr = data.data.split(',')
                 if(darr[0] == 'start'){
                     is_waiting = false;
@@ -203,7 +203,7 @@
                 initStartSign();
             }
 
-            $.get('/alive?_='+new Date().getTime(), function(data){
+            $.get('/alive?room='+room_name+'&up='+my_piece+'&_t='+ new Date().getTime(), function(data){
                 return true;
             });            
         });

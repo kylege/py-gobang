@@ -16,15 +16,9 @@ from datetime import timedelta
 
 class EnterRoomHandler(web.RequestHandler):
     def get(self, room_name):
-        rn = self.get_secure_cookie('rn')
-        up = self.get_secure_cookie('up')
-        if rn and up and not rn == room_name:
-            removeUserFromRoom(rn, [int(up)])  #将以前那个房间移除本用户
 
         if not room_name in all_rooms.keys(): #新房间
             piece_id = random.randint(1,2)
-            self.set_secure_cookie('up', str(piece_id))  #棋子颜色号，你是黑棋还是白棋，随机分配
-            self.set_secure_cookie('rn', room_name) #房间名称
             room = GameRoom(room_name, piece_id)
             self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True,
                 all_rooms_count=len(all_rooms)+1,
@@ -38,13 +32,7 @@ class EnterRoomHandler(web.RequestHandler):
                 if isLog:  print (u'房间已被占用').encode('UTF-8')
                 return
             elif len(all_rooms[room_name].user_piece_ids) == 1:
-                if (rn and rn==room_name) and (up and int(up) in all_rooms[room_name].user_piece_ids):
-                    self.write(u'不能重复进入房间')
-                    self.finish()
-                    return
                 my_piece_id = (1 in all_rooms[room_name].user_piece_ids and 2 or 1)
-                self.set_secure_cookie('up', str(my_piece_id))
-                self.set_secure_cookie('rn', room_name)
                 all_rooms[room_name].user_piece_ids.add(my_piece_id)
 
                 all_rooms[room_name].status = GameRoom.STATUS_GOING
@@ -76,14 +64,14 @@ class GameStepHandler(web.RequestHandler):
             self.write({'result':False, 'msg':'pos is invalid'})
             self.finish()
 
-        room_name = self.get_secure_cookie('rn')
+        room_name = self.get_argument('room')
         if not room_name in all_rooms.keys(): 
             self.write({'result':False, 'msg':'room not exists'})
             self.finish()
         if not all_rooms[room_name].status == GameRoom.STATUS_GOING:
             self.write({'result':False, 'msg':'room not going'})
             self.finish()
-        user_piece = self.get_secure_cookie('up')
+        user_piece = self.get_argument('up')
         if not user_piece:
             self.write({'result':False, 'msg':'identity not exists'})
             self.finish()
@@ -111,8 +99,8 @@ class GamePollHandler(web.RequestHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        self.room_name = self.get_secure_cookie('rn')
-        self.user_piece = self.get_secure_cookie('up')
+        self.room_name = self.get_argument('room')
+        self.user_piece = self.get_argument('up')
         if not self.user_piece or not self.room_name:
             self.write({'result':False, 'msg':'user not valid'})
             self.finish()
@@ -131,6 +119,7 @@ class GamePollHandler(web.RequestHandler):
         return
 
     def _handle_reply(self, msg):
+        if isLog: print 'Recieve: '+msg[0]+' '+msg[1]
         reply = msg[1]
         try:
             self.write({'result':True, 'code':2, 'data':reply}) # code 1:game start, code 2:game step
@@ -145,7 +134,6 @@ class GamePollHandler(web.RequestHandler):
         try:
             self.stream.stop_on_recv()
             self.stream.close()
-            removeUserFromRoom(self.room_name, [int(self.user_piece)])
         except:
             print 'exception poll connection close'
             pass
@@ -154,10 +142,12 @@ class GameAliveHandler(web.RequestHandler):
 
     @web.asynchronous
     def get(self):
+
         if isLog: print 'Enter alive'
-        self.room_name = self.get_secure_cookie('rn')
-        self.user_piece = self.get_secure_cookie('up')
+        self.room_name = self.get_argument('room')
+        self.user_piece = self.get_argument('up')
         if not self.room_name or not self.user_piece:
+            self.write('not up or not rn')
             self.finish()
             return
         if not self.room_name in all_rooms.keys(): #新房间
@@ -206,6 +196,15 @@ class RoomListHandler(web.RequestHandler):
                     rooms=all_rooms,
                     )
 
+class Pubtest(web.RequestHandler):
+    def get(self):
+        topic = self.get_argument('topic')
+        pubContent([topic.encode('UTF-8'), '1,1'.encode('UTF-8')])
+
+def pubContent(content):
+    if isLog: print content
+    zmq_pusher.send_multipart(content)
+
 
 urls = [
         (r"/room-(\w{1,16})", EnterRoomHandler),
@@ -213,6 +212,7 @@ urls = [
         (r"/step", GameStepHandler),
         (r"/alive", GameAliveHandler),
         (r"/rooms", RoomListHandler),
+        (r"/pubtest", Pubtest),
         ]
 
 settings = dict(
@@ -225,20 +225,16 @@ isLog = True
 gobang = Gobang()
 all_rooms = {}
 zmq_addr = 'tcp://127.0.0.1:5005'
-
 ctx = zmq.Context()
 zmq_pusher = ctx.socket(zmq.PUB)
 zmq_pusher.bind(zmq_addr)
 
-def pubContent(content):
-    # print content
-    zmq_pusher.send_multipart(content)
 
 def main():
     application = web.Application(urls, **settings)
 
     application.listen(8888)
-    tornado.autoreload.start(tornado.ioloop.IOLoop.instance()) 
+    # tornado.autoreload.start(tornado.ioloop.IOLoop.instance()) # add this to enable autorestart
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
