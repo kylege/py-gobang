@@ -32,6 +32,19 @@
     </div>
     </div>
 
+    <div id="alert-model-dom" class="modal hide fade">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3 id="alert-title">游戏已结束</h3>
+        </div>
+        <div class="modal-body">
+            <p id="alert-body"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="javascript:$('#alert-model-dom').modal('hide')" class="btn">关闭</a>
+        </div>
+    </div>
+
 {% end %}
 
 {% block javascript-block %}
@@ -119,6 +132,8 @@
 	  	} 
         //哪一方该下棋的标记
         function initStartSign(){
+            $('#piece_sign_top').removeClass('arrow-2-right');
+            $('#piece_sign_bottom').removeClass('arrow-2-right');
             var piece_signs = $('#piece_sign_top');
             if(my_piece == 1){
                 piece_signs = $('#piece_sign_bottom');   
@@ -127,7 +142,7 @@
         }
 
         function getGamePoll(){
-            $.get('/poll', function(data){
+            $.get('/poll?_='+new Date().getTime(), function(data){
                 darr = data.data.split(',')
                 if(darr[0] == 'start'){
                     is_waiting = false;
@@ -145,20 +160,25 @@
                     $('#status-span').text('对方离线');
                     $('#game-canvas').css('cursor', 'default');
                     $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').removeClass('arrow-2-right');
+                    $('#alert-title').text('对方离线');
+                    $('#alert-model-dom').data('id', 0).modal('show');
+                    getGamePoll();
                 }else if (darr[0] == 'end'){
                     is_waiting = true;
                     $('#status-span').text('游戏结束');
                     $('#piece_sign_top').removeClass('arrow-2-right');
                     $('#piece_sign_bottom').removeClass('arrow-2-right');
                     $('#game-canvas').css('cursor', 'default'); 
-                    console.log(darr)
                     pid = parseInt(darr[1])
-                    if (pid != my_piece){
+                    if (pid > 0 && pid != my_piece){
                         row = parseInt(darr[2]);
                         col = parseInt(darr[3]);
                         gamec.drawPiece(row, col, his_piece);
                         game_pieces[row][col] = his_piece;                  
                     }
+                    $('#alert-title').text('游戏结束');
+                    $('#alert-model-dom').data('id', 0).modal('show');
                 }else{  //对方下棋
                     pos = data.data.split(',')
                     row = parseInt(pos[0]);
@@ -183,9 +203,9 @@
                 initStartSign();
             }
 
-            $.get('/alive', function(data){
+            $.get('/alive?_='+new Date().getTime(), function(data){
                 return true;
-            });
+            });            
         });
     </script>
 

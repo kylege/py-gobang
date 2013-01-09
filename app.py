@@ -12,24 +12,22 @@ ioloop.install()
 import tornado
 from tornado import web, autoreload
 from Config import Config
+from datetime import timedelta
 
 class EnterRoomHandler(web.RequestHandler):
-    # @web.asynchronous
     def get(self, room_name):
         rn = self.get_secure_cookie('rn')
         up = self.get_secure_cookie('up')
-        if rn and up:
+        if rn and up and not rn == room_name:
             removeUserFromRoom(rn, [int(up)])  #将以前那个房间移除本用户
 
         if not room_name in all_rooms.keys(): #新房间
             piece_id = random.randint(1,2)
             self.set_secure_cookie('up', str(piece_id))  #棋子颜色号，你是黑棋还是白棋，随机分配
             self.set_secure_cookie('rn', room_name) #房间名称
-
             room = GameRoom(room_name, piece_id)
-            all_rooms[room_name] = room
             self.render('index.html', cur_room=room, my_piece_id=piece_id, is_waiting=True,
-                all_rooms_count=len(all_rooms),
+                all_rooms_count=len(all_rooms)+1,
                 config=Config,
                 )
             if isLog:  print u'第一个进入'
@@ -38,20 +36,30 @@ class EnterRoomHandler(web.RequestHandler):
                 readonly = True
                 self.write('房间已被占用')
                 if isLog:  print '房间已被占用'
+                return
             elif len(all_rooms[room_name].user_piece_ids) == 1:
-                my_piece_id = 1 in all_rooms[room_name].user_piece_ids and 2 or 1
-                all_rooms[room_name].user_piece_ids.add(my_piece_id)
+                if (rn and rn==room_name) and (up and int(up) in all_rooms[room_name].user_piece_ids):
+                    self.write(u'不能重复进入房间')
+                    self.finish()
+                    return
+                my_piece_id = (1 in all_rooms[room_name].user_piece_ids and 2 or 1)
                 self.set_secure_cookie('up', str(my_piece_id))
                 self.set_secure_cookie('rn', room_name)
+                all_rooms[room_name].user_piece_ids.add(my_piece_id)
 
                 all_rooms[room_name].status = GameRoom.STATUS_GOING
                 topic = (room_name+''+str(my_piece_id)).encode('UTF-8')
-                pubContent([topic,'start,'])
+                ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), 
+                    lambda:self._pubContentCallBack([topic,'start,']))
                 self.render('index.html', cur_room=all_rooms[room_name], my_piece_id=my_piece_id, is_waiting=(my_piece_id==2), 
                     all_rooms_count=len(all_rooms),
                     config=Config
                     )
                 if isLog:  print '游戏开始'
+
+    def _pubContentCallBack(self, content):
+        if isLog: print 'Enter room msg'
+        pubContent(content)
 
 '''
     下棋
@@ -120,39 +128,50 @@ class GamePollHandler(web.RequestHandler):
         self.stream = zmqstream.ZMQStream(s)
 
         self.stream.on_recv(self._handle_reply)
+        return
 
     def _handle_reply(self, msg):
         reply = msg[1]
-        self.write({'result':True, 'code':2, 'data':reply}) # code 1:game start, code 2:game step
-        self.stream.close()
+        try:
+            self.write({'result':True, 'code':2, 'data':reply}) # code 1:game start, code 2:game step
+            self.stream.stop_on_recv()
+            self.stream.close()
+        except:
+            print 'exception poll reply'
+            pass 
         self.finish()
 
     def on_connection_close(self):
-        if isLog:  print self.room_name + '' + self.user_piece + u'离线'
-        pubContent([(self.room_name+''+self.user_piece).encode('UTF-8'), 'off,'])
-        self.stream.stop_on_recv()
-        self.stream.close()
         try:
+            self.stream.stop_on_recv()
+            self.stream.close()
             removeUserFromRoom(self.room_name, [int(self.user_piece)])
-            if not all_rooms[self.room_name].user_piece_ids:
-                del all_rooms[self.room_name]
         except:
+            print 'exception poll connection close'
             pass
 
 class GameAliveHandler(web.RequestHandler):
 
     @web.asynchronous
     def get(self):
+        if isLog: print 'Enter alive'
         self.room_name = self.get_secure_cookie('rn')
         self.user_piece = self.get_secure_cookie('up')
         if not self.room_name or not self.user_piece:
             self.finish()
+            return
+        if not self.room_name in all_rooms.keys(): #新房间
+            room = GameRoom(self.room_name, int(self.user_piece))
+            all_rooms[self.room_name] = room
+        return
+
 
     def on_connection_close(self):
         if isLog: print 'Alive连接断开'
         try:
             removeUserFromRoom(self.room_name, [int(self.user_piece)])
         except:
+            print 'removeroom exception'
             pass
 
 '''
@@ -162,13 +181,20 @@ def removeUserFromRoom(room_name, user_pieces):
     if not room_name.encode('UTF-8') in all_rooms.keys():
         return False
     if isLog: print '移除用户:'+','.join([str(u) for u in user_pieces])
+
     for piece in user_pieces:
         if piece in all_rooms[room_name].user_piece_ids:
             all_rooms[room_name].user_piece_ids.remove(piece)
+            if isLog:  print room_name + '' + str(piece) + u'离线'
+            pubContent([(room_name+''+str(piece)).encode('UTF-8'), 'off,'])
+            his_piece = piece == 1 and 2 or 1
+            pubContent([(room_name+str(his_piece)).encode('UTF-8'), 'end,0,-1,-1'])
+
     all_rooms[room_name].gobang.pieces = [([0] * (Gobang.GRID_SIZE+1)) for i in range(Gobang.GRID_SIZE+1)]
     all_rooms[room_name].gobang.last_piece = None
     if not all_rooms[room_name].user_piece_ids:
-            del all_rooms[room_name]
+        if isLog: print '移除房间:'+room_name
+        del all_rooms[room_name]
     return True
 
 class RoomListHandler(web.RequestHandler):
@@ -195,7 +221,7 @@ settings = dict(
         cookie_secret = 'werwerwAW15Wwr-wrwe==dssdtfrwerter2t12',
         );
 
-isLog = False
+isLog = True
 gobang = Gobang()
 all_rooms = {}
 zmq_addr = 'tcp://127.0.0.1:5005'
