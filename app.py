@@ -82,8 +82,8 @@ class GameStepHandler(web.RequestHandler):
         else:
             if all_rooms[room_name].gobang.isGameOver(int(posarr[0]), int(posarr[1])):
                 if isLog:  print (room_name+u' 游戏结束').encode('UTF-8')
-                pubContent([(room_name+'1').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
-                pubContent([(room_name+'2').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
+                pubContent([(room_name+'1').encode('UTF-8'), ('end,'+user_piece+','+pos).encode('UTF-8')])
+                pubContent([(room_name+'2').encode('UTF-8'), ('end,'+user_piece+','+pos).encode('UTF-8')])
                 all_rooms[room_name].status = GameRoom.STATUS_END
                 if isLog:  print (u'清空房间'+room_name).encode('UTF-8')
                 del all_rooms[room_name]
