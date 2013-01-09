@@ -28,8 +28,8 @@ class EnterRoomHandler(web.RequestHandler):
         else:
             if len(all_rooms[room_name].user_piece_ids) == 2: #已经满了
                 readonly = True
-                self.write('房间已被占用')
                 if isLog:  print (u'房间已被占用').encode('UTF-8')
+                self.render('msg.html', msg="房间已被占用", config=Config,all_rooms_count=len(all_rooms),)
                 return
             elif len(all_rooms[room_name].user_piece_ids) == 1:
                 my_piece_id = (1 in all_rooms[room_name].user_piece_ids and 2 or 1)
@@ -196,10 +196,6 @@ class RoomListHandler(web.RequestHandler):
                     rooms=all_rooms,
                     )
 
-class Pubtest(web.RequestHandler):
-    def get(self):
-        topic = self.get_argument('topic')
-        pubContent([topic.encode('UTF-8'), '1,1'.encode('UTF-8')])
 
 def pubContent(content):
     if isLog: print content
@@ -212,7 +208,7 @@ urls = [
         (r"/step", GameStepHandler),
         (r"/alive", GameAliveHandler),
         (r"/rooms", RoomListHandler),
-        (r"/pubtest", Pubtest),
+        (r"/", RoomListHandler),
         ]
 
 settings = dict(

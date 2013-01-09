@@ -60,3 +60,12 @@ body {
 #alert-model-dom {
 	top: 30%;
 }
+#enter-room-form{
+	margin-left: 70px;
+}
+#err-msg-div {
+	padding-left: 10%;
+}
+#going-rooms-div{
+	color: #333;
+}

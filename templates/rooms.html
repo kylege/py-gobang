@@ -4,6 +4,13 @@
 {% block container-fluid %} 
 
 <div class="container-fluid">
+
+  <form class="form-search" id="enter-room-form">
+    <span>您也可以创建房间</span>
+    <input title="字母数字和下划线，长度不超过16" type="text" class="input-medium search-query" id="room-name-input" placeholder="输入房间名" onkeydown="if(event.keyCode==13) {document.getElementById('enter-room-btn').click();return false;}">
+    <button id="enter-room-btn" type="button" class="btn" onclick="javascript:window.location = '/room-'+$('#room-name-input').val(); return false;">进入</button>
+  </form>
+
   <h3 class="rooms-title">当前空闲的房间</h3>
   <table class="table table-hover" id="rooms-table">
       <thead><tr><th>序号</th><th>房间</th></tr></thead>
@@ -19,21 +26,26 @@
       </tbody>
   </table>
 
-  <h3 class="rooms-title">正在游戏的房间</h3>
-  <table class="table table-hover" id="rooms-table">
-      <thead><tr><th>序号</th><th>房间</th></tr></thead>
-      <tbody>
-        {% set count = 1 %}
-        {% for (name, room) in rooms.items() %}
-          {% if len(room.user_piece_ids) == 2 %}
-          </tr><td>{{ count }}</td> <td>{{ escape(room.room_name) }} </td></tr>
-          {% set count = count+1 %}
+    <h3 class="rooms-title">正在游戏的房间</h3>
+    <table class="table table-hover" id="rooms-table">
+        <thead><tr><th>序号</th><th>房间</th></tr></thead>
+        <tbody>
+          {% set count = 1 %}
+          {% for (name, room) in rooms.items() %}
+            {% if len(room.user_piece_ids) == 2 %}
+            </tr><td>{{ count }}</td> <td>{{ escape(room.room_name) }} </td></tr>
+            {% set count = count+1 %}
+            {% end %}
           {% end %}
-        {% end %}
 
-      </tbody>
-  </table>
+        </tbody>
+    </table>
 </div>
 
 
+{% end %}
+
+{% block javascript-block %}                     
+
+<script src="{{config.ConfigStaticPath}}/js/jquery-1.8.3.min.js"></script>
 {% end %}
