@@ -30,12 +30,12 @@ class EnterRoomHandler(web.RequestHandler):
                 all_rooms_count=len(all_rooms)+1,
                 config=Config,
                 )
-            if isLog:  print u'第一个进入'
+            if isLog:  print (u'第一个进入').encode('UTF-8')
         else:
             if len(all_rooms[room_name].user_piece_ids) == 2: #已经满了
                 readonly = True
                 self.write('房间已被占用')
-                if isLog:  print '房间已被占用'
+                if isLog:  print (u'房间已被占用').encode('UTF-8')
                 return
             elif len(all_rooms[room_name].user_piece_ids) == 1:
                 if (rn and rn==room_name) and (up and int(up) in all_rooms[room_name].user_piece_ids):
@@ -55,7 +55,7 @@ class EnterRoomHandler(web.RequestHandler):
                     all_rooms_count=len(all_rooms),
                     config=Config
                     )
-                if isLog:  print '游戏开始'
+                if isLog:  print (u'游戏开始').encode('UTF-8')
 
     def _pubContentCallBack(self, content):
         if isLog: print 'Enter room msg'
@@ -93,11 +93,11 @@ class GameStepHandler(web.RequestHandler):
             self.write({'result':False, 'msg':ret.msg})
         else:
             if all_rooms[room_name].gobang.isGameOver(int(posarr[0]), int(posarr[1])):
-                if isLog:  print room_name+u' 游戏结束'
+                if isLog:  print (room_name+u' 游戏结束').encode('UTF-8')
                 pubContent([(room_name+'1').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
                 pubContent([(room_name+'2').encode('UTF-8'), 'end,'+user_piece+','+pos.encode('UTF-8')])
                 all_rooms[room_name].status = GameRoom.STATUS_END
-                if isLog:  print u'清空房间'+room_name
+                if isLog:  print (u'清空房间'+room_name).encode('UTF-8')
                 del all_rooms[room_name]
             else:
                 pubContent([(room_name+''+user_piece).encode('UTF-8'), pos.encode('UTF-8')])
@@ -120,7 +120,7 @@ class GamePollHandler(web.RequestHandler):
         self.his_piece = self.user_piece == '1' and '2' or '1'
 
         topic = (self.room_name+''+self.his_piece).encode('UTF-8')
-        if isLog:  print u'订阅: '+topic
+        if isLog:  print (u'订阅: '+topic).encode('UTF-8')
         ctx = zmq.Context.instance()
         s = ctx.socket(zmq.SUB)
         s.connect(zmq_addr)
@@ -167,7 +167,7 @@ class GameAliveHandler(web.RequestHandler):
 
 
     def on_connection_close(self):
-        if isLog: print 'Alive连接断开'
+        if isLog: print (u'Alive连接断开').encode('UTF-8')
         try:
             removeUserFromRoom(self.room_name, [int(self.user_piece)])
         except:
@@ -180,12 +180,12 @@ class GameAliveHandler(web.RequestHandler):
 def removeUserFromRoom(room_name, user_pieces):
     if not room_name.encode('UTF-8') in all_rooms.keys():
         return False
-    if isLog: print '移除用户:'+','.join([str(u) for u in user_pieces])
+    if isLog: print (u'移除用户:'+','.join([str(u) for u in user_pieces])).encode('UTF-8')
 
     for piece in user_pieces:
         if piece in all_rooms[room_name].user_piece_ids:
             all_rooms[room_name].user_piece_ids.remove(piece)
-            if isLog:  print room_name + '' + str(piece) + u'离线'
+            if isLog:  print (room_name + '' + str(piece) + u'离线').encode('UTF-8')
             pubContent([(room_name+''+str(piece)).encode('UTF-8'), 'off,'])
             his_piece = piece == 1 and 2 or 1
             pubContent([(room_name+str(his_piece)).encode('UTF-8'), 'end,0,-1,-1'])
@@ -193,7 +193,7 @@ def removeUserFromRoom(room_name, user_pieces):
     all_rooms[room_name].gobang.pieces = [([0] * (Gobang.GRID_SIZE+1)) for i in range(Gobang.GRID_SIZE+1)]
     all_rooms[room_name].gobang.last_piece = None
     if not all_rooms[room_name].user_piece_ids:
-        if isLog: print '移除房间:'+room_name
+        if isLog: print (u'移除房间:'+room_name).encode('UTF-8')
         del all_rooms[room_name]
     return True
 
