@@ -7,7 +7,7 @@
 
   <form class="form-search" id="enter-room-form">
     <span>您也可以创建房间</span>
-    <input title="字母数字和下划线，长度不超过16" type="text" class="input-medium search-query" id="room-name-input" placeholder="输入房间名" onkeydown="if(event.keyCode==13) {document.getElementById('enter-room-btn').click();return false;}">
+    <input title="" type="text" class="input-medium search-query" id="room-name-input" placeholder="输入房间名" onkeydown="if(event.keyCode==13) {document.getElementById('enter-room-btn').click();return false;}">
     <button id="enter-room-btn" type="button" class="btn" onclick="javascript:window.location = '/room-'+$('#room-name-input').val(); return false;">进入</button>
   </form>
 
