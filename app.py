@@ -59,9 +59,10 @@ class EnterRoomHandler(web.RequestHandler):
     用websocket来与前端通信
 '''
 class GameSocketHandler(tornado.websocket.WebSocketHandler):
-    
+
     socket_handlers = {}   #房间名-1:GameSocketHandler 一个房间每个人有一个值, 1用户订阅 room-1
     all_rooms = {}  # 房间名:GameRoom
+    active_timeout = 60000 # 超时时间，超时后关闭房间
 
     def open(self):
 
@@ -71,20 +72,24 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         self.room_name = self.room_name.encode('utf-8')
         self.mykey = "%s-%d" % (self.room_name, self.user_piece)
         self.hiskey = "%s-%d" % (self.room_name, self.his_piece)
+        self.is_active = False  #标志是否有活动，是否有人下棋，时间太长没人动，就关闭房间
 
         if not self.room_name in GameSocketHandler.all_rooms:  #第一次进入房间
             room = GameRoom(self.room_name, self.user_piece)
             GameSocketHandler.all_rooms[self.room_name] = room
             if isLog:  print '第一个进入'
 
-        print "User %d has entered the room: %s" % (self.user_piece, self.room_name)
+        if isLog: print "User %d has entered the room: %s" % (self.user_piece, self.room_name)
         if not self.mykey in GameSocketHandler.socket_handlers:
             GameSocketHandler.socket_handlers[self.mykey] = self
         self.write_message({'type':'online'})
+
+        chek_active = tornado.ioloop.PeriodicCallback(self._check_active_callback, GameSocketHandler.active_timeout)
+        chek_active.start()
         return
 
     def on_close(self):
-        print 'User %d  has left the room: %s' % (self.user_piece, self.room_name)
+        if isLog: print 'User %d  has left the room: %s' % (self.user_piece, self.room_name)
 
         del GameSocketHandler.socket_handlers[self.mykey]
 
@@ -104,7 +109,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         return
 
     def on_message(self, message):
-        print 'Room '+self.room_name+' websocket receive message: ' + message
+        self.is_active = True
+        if isLog: print 'Room '+self.room_name+' websocket receive message: ' + message
         msg = json.loads(message)
         if not 'type' in msg:
             print 'Error. message has no type filed.'
@@ -116,6 +122,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def _gamemove(self, msg):
+        self.is_active = True
         row = msg.get(u'row')
         col = msg.get(u'col')
         room = GameSocketHandler.all_rooms[self.room_name]
@@ -123,7 +130,7 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         if not ret.result:
             return False
         else:
-            if room.gobang.isGameOver(row, col):
+            if room.gobang.isGameOver(row, col):  #游戏结束
                 if isLog:  print "Room: %s gameover." % self.room_name.encode('UTF-8')
                 socket = GameSocketHandler.socket_handlers[self.hiskey]
                 socket.write_message({'type':'on_gameover'})
@@ -134,6 +141,11 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 socket = GameSocketHandler.socket_handlers[self.hiskey]
                 socket.write_message({'type':'on_gamemove', 'row':row, 'col':col})
         return True
+
+    def _check_active_callback(self):
+        if not self.is_active:
+            if isLog:  print '超时移除房间: %s' % self.room_name
+            self.close()
 
 class RoomListHandler(web.RequestHandler):
 
