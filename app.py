@@ -37,6 +37,7 @@ class EnterRoomHandler(web.RequestHandler):
                     all_rooms_count = len(GameSocketHandler.all_rooms),)
                 return
             elif len(GameSocketHandler.all_rooms[room_name].user_piece_ids) == 1:
+                if isLog:  print '游戏开始'
                 his_piece_id = 1 in GameSocketHandler.all_rooms[room_name].user_piece_ids and 1 or 2
                 my_piece_id = his_piece_id == 1 and 2 or 1
                 hiskey = room_name+'-'+str(his_piece_id)
@@ -44,15 +45,17 @@ class EnterRoomHandler(web.RequestHandler):
 
                 GameSocketHandler.all_rooms[room_name].status = GameRoom.STATUS_GOING
                 topic = (room_name+''+str(my_piece_id)).encode('UTF-8')
-                ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1),
-                    lambda:GameSocketHandler.socket_handlers[hiskey].write_message({'type':'on_gamestart'}) )
+                ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1), self._writemsg_callback(hiskey) )
                 self.render('index.html', cur_room=GameSocketHandler.all_rooms[room_name],
                     my_piece_id = my_piece_id,
                     is_waiting = (my_piece_id==2),
                     all_rooms_count = len(GameSocketHandler.all_rooms),
                     config = Config,
                     )
-                if isLog:  print '游戏开始'
+
+    def _writemsg_callback(self, hiskey):
+         if hiskey in GameSocketHandler.socket_handlers:
+            GameSocketHandler.socket_handlers[hiskey].write_message({'type':'on_gamestart'})
 
 
 '''
@@ -88,20 +91,24 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         chek_active.start()
         return
 
-    def on_close(self):
+    def on_close(self):   ##还有问题，刷新的时候
+        GameSocketHandler.all_rooms[self.room_name].user_piece_ids.remove(self.user_piece)
         if isLog: print 'User %d  has left the room: %s' % (self.user_piece, self.room_name)
 
         del GameSocketHandler.socket_handlers[self.mykey]
 
-        GameSocketHandler.all_rooms[self.room_name].user_piece_ids.remove(self.user_piece)
         if not GameSocketHandler.all_rooms[self.room_name].user_piece_ids:  #房间没人了
+            if isLog: print '移除房间: %s' % self.room_name
             del GameSocketHandler.all_rooms[self.room_name]
         else: #房间还有一个人，向这个人发通知
-            if not self.hiskey in GameSocketHandler.socket_handlers:
+            if not GameSocketHandler.socket_handlers:
                 return
+            if isLog: print 'Let the other guy know i\'m leaving.'
             socket = GameSocketHandler.socket_handlers[self.hiskey]
             # 给对方发
-            socket.write_message({'type':'offline'})
+            ioloop.IOLoop.instance().add_timeout(timedelta(seconds=1),
+                    lambda:socket.write_message({'type':'offline'}) )
+            
             GameSocketHandler.all_rooms[self.room_name].gobang.pieces = [([0] * (Gobang.GRID_SIZE+1)) for i in range(Gobang.GRID_SIZE+1)]
             GameSocketHandler.all_rooms[self.room_name].gobang.last_piece = None
             GameSocketHandler.all_rooms[self.room_name].status = GameRoom.STATUS_WAITING
