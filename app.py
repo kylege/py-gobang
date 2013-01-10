@@ -110,7 +110,7 @@ class GamePollHandler(web.RequestHandler):
         self.his_piece = self.user_piece == '1' and '2' or '1'
 
         topic = self.room_name+''+self.his_piece
-        if isLog:  print u'订阅: '+topic
+        if isLog:  print u'订阅: '+topic.encode('utf-8')
         ctx = zmq.Context.instance()
         s = ctx.socket(zmq.SUB)
         s.connect(zmq_addr)
