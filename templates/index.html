@@ -133,13 +133,13 @@
         }
 
         function gamemove(row, col){
+            gamec.drawPiece(row, col, my_piece);
             gamesocket.send(JSON.stringify({
                 room: room_name,
                 row: row,
                 col: col,
                 'type':'on_gamemove',
             }));
-            gamec.drawPiece(row, col, my_piece);
             is_waiting = true;
             game_pieces[row][col] = my_piece;
             $('#game-canvas').css('cursor', 'default');
