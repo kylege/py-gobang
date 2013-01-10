@@ -117,8 +117,6 @@
             if(game_pieces[row][col] != 0){
                 return false;
             }
-            gamemove(row, col);
-
             $.post("/step?_t="+ new Date().getTime(), { pos: rowcol.join(','), room: room_name, up: my_piece } , function(data){
                 if(data.result){
                     gamec.drawPiece(rowcol[0], rowcol[1], my_piece);
@@ -131,7 +129,6 @@
                     alert(data.msg);
                 }
             });
-
 	  	} 
         //哪一方该下棋的标记
         function initStartSign(){
@@ -144,137 +141,71 @@
             piece_signs.addClass('arrow-2-right');
         }
 
-        function gamemove(row, col){
-            gamesocket.send(JSON.stringify({
-                room: room_name,
-                row: row,
-                col: col,
-            }));
-            gamec.drawPiece(row, col, my_piece);
-            is_waiting = true;
-            game_pieces[row][col] = my_piece;
-            $('#game-canvas').css('cursor', 'default');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
-            $('#piece_sign_top').addClass('arrow-2-right');
+        function getGamePoll(){
+            $.get('/poll?room='+room_name+'&up='+my_piece+'&_t='+ new Date().getTime(), function(data){
+                darr = data.data.split(',')
+                if(darr[0] == 'start'){
+                    is_waiting = false;
+                    $('#status-span').text('对方上线，游戏开始');
+                    gamec.canvas.width = gamec.canvas.width;
+                    gamec.drawGrid();
+                    $('#his_status_img').attr('src', status_imgs[his_piece-1]);
+                    if(my_piece == 1){  //黑先白后
+                        $('#game-canvas').css('cursor', 'pointer');
+                    }
+                    initStartSign();
+                    getGamePoll();
+                }else if (darr[0] == 'off'){
+                    is_waiting = true;
+                    $('#status-span').text('对方离线');
+                    $('#game-canvas').css('cursor', 'default');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').removeClass('arrow-2-right');
+                    $('#alert-title').text('对方离线');
+                    $('#alert-model-dom').data('id', 0).modal('show');
+                    getGamePoll();
+                }else if (darr[0] == 'end'){
+                    is_waiting = true;
+                    $('#status-span').text('游戏结束');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').removeClass('arrow-2-right');
+                    $('#game-canvas').css('cursor', 'default'); 
+                    pid = parseInt(darr[1])
+                    if (pid > 0 && pid != my_piece){
+                        row = parseInt(darr[2]);
+                        col = parseInt(darr[3]);
+                        gamec.drawPiece(row, col, his_piece);
+                        game_pieces[row][col] = his_piece;                  
+                    }
+                    $('#alert-title').text('游戏结束');
+                    $('#alert-model-dom').data('id', 0).modal('show');
+                }else{  //对方下棋
+                    pos = data.data.split(',')
+                    row = parseInt(pos[0]);
+                    col = parseInt(pos[1]);
+                    gamec.drawPiece(row, col, his_piece);
+                    game_pieces[row][col] = his_piece;
+                    $('#game-canvas').css('cursor', 'pointer');
+                    $('#piece_sign_top').removeClass('arrow-2-right');
+                    $('#piece_sign_bottom').addClass('arrow-2-right');
+                    is_waiting = false;
+                    getGamePoll();
+                }
+            });
         }
-
-        /**
-         * 对方上线
-         * @param  {string} msg 
-         * @return {bool}     
-         */
-        function on_online(msg){
-
-        }
-        /**
-         * 对方离线
-         * @param  {string} msg 
-         * @return {bool}     
-         */
-        function on_offline(msg){
-            is_waiting = true;
-            $('#status-span').text('对方离线');
-            $('#game-canvas').css('cursor', 'default');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
-            $('#alert-title').text('对方离线');
-            $('#alert-model-dom').data('id', 0).modal('show');
-        }
-        /**
-         * 对方走一步棋
-         * @param  {string} msg 
-         * @return {bool}     
-         */
-        function on_gamemove(msg){
-            row = parseInt(msg.row);
-            col = parseInt(msg.col);
-            gamec.drawPiece(row, col, his_piece);
-            game_pieces[row][col] = his_piece;
-            $('#game-canvas').css('cursor', 'pointer');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').addClass('arrow-2-right');
-            is_waiting = false;
-        }
-        /**
-         * 开始游戏
-         * @param  {string} msg 
-         * @return {bool}     
-         */
-        function on_gamestart(msg){
-            is_waiting = false;
-            $('#status-span').text('对方上线，游戏开始');
-            gamec.canvas.width = gamec.canvas.width;
-            gamec.drawGrid();
-            $('#his_status_img').attr('src', status_imgs[his_piece-1]);
-            if(my_piece == 1){  //黑先白后
-                $('#game-canvas').css('cursor', 'pointer');
-            }
-            initStartSign();
-        }
-        /**
-         * 游戏结束
-         * @param  {string} msg 
-         * @return {bool}     
-         */
-        function on_gameover(msg){
-            is_waiting = true;
-            $('#status-span').text('游戏结束');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
-            $('#game-canvas').css('cursor', 'default'); 
-            pid = parseInt(msg.up)
-            if (pid > 0 && pid != my_piece){
-                row = parseInt(msg.row);
-                col = parseInt(msg.col);
-                gamec.drawPiece(row, col, his_piece);
-                game_pieces[row][col] = his_piece;                  
-            }
-            $('#alert-title').text('游戏结束');
-            $('#alert-model-dom').data('id', 0).modal('show');
-        }
-
         $(document).ready(function () {         
             gamec.canvas.addEventListener("click", canvasClickHandler, false);
             gamec.drawGrid();
-
+            getGamePoll();
             $('#my_status_img').attr('src', status_imgs[my_piece-1]);
             if(room_status != 0){
                $('#his_status_img').attr('src', status_imgs[his_piece-1]);
                 initStartSign();
             }
-          
-            var WebSocket = window.WebSocket || window.MozWebSocket;
-            if (WebSocket) {
-                try {
-                    var gamesocket = new WebSocket('ws://10.2.0.77:8888/gamesocket?room={{ cur_room.room_name }}');
-                } catch (e) {}
-            }
 
-            if (gamesocket) {
-                gamesocket.onopen = function(){  
-                    gamesocket.send(JSON.stringify({name:"yes"}));
-                }  
-                gamesocket.onmessage = function(event) {
-                    var msg = JSON.parse(event.data)
-                    switch(msg.type){
-                        case 'online':
-                            on_online(msg);
-                            break;
-                        case 'offline':
-                            on_offline(msg);
-                            break;
-                        case 'on_gamestart':
-                            on_gamestart(msg);
-                            break;
-                        case 'on_gamemove':
-                            on_gamemove(msg);
-                            break;
-                        case 'on_gameover':
-                            on_gameover(msg);
-                            break;
-                    }
-                }
-            }
+            $.get('/alive?room='+room_name+'&up='+my_piece+'&_t='+ new Date().getTime(), function(data){
+                return true;
+            });            
         });
     </script>
 

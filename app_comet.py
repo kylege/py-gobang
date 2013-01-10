@@ -14,8 +14,7 @@ from zmq.eventloop import zmqstream, ioloop
 ioloop.install()
 
 import tornado
-import json
-from tornado import web, autoreload, websocket
+from tornado import web, autoreload
 from Config import Config
 from datetime import timedelta
 
@@ -195,44 +194,6 @@ def removeUserFromRoom(room_name, user_pieces):
         del all_rooms[room_name]
     return True
 
-''' 
-    用websocket来与前端通信
-'''
-class GameSocketHandler(tornado.websocket.WebSocketHandler):
-    socket_handlers = {}   #房间名-1:GameSocketHandler 一个房间每个人有一个值, 1用户订阅 room-1
-
-    def open(self):
-        try:
-            self.room_name = self.get_argument('room')
-            self.user_piece = int(self.get_argument('up'))
-            self.his_piece = self.user_piece == 1 and 2 or 1
-            self.room_name = self.room_name.encode('utf-8')
-            self.mykey = self.room_name+'-'+self.user_piece
-            self.hiskey = self.room_name+'-'+self.his_piece
-        except:
-            return False
-        print u'User '+self.piece+' has entered the room: '+self.room_name
-        if not self.mykey in GameSocketHandler.keys():
-            GameSocketHandler[self.mykey] = self
-        return
-
-    def on_close(self):
-        print u'User '+self.user_piece+' has left the room: '+self.room_name
-        del GameSocketHandler[self.mykey]
-        if not self.hiskey in GameSocketHandler.socket_handlers.keys():
-            return
-        socket = GameSocketHandler.socket_handlers[self.hiskey]
-        # 给对方发
-        socket.send({'type':'offline'})
-        return
-
-    def on_message(self, message):
-        print 'Websocket receive message: ' + message
-        return
-
-    def allow_draft76(self):
-        return True
-
 class RoomListHandler(web.RequestHandler):
 
     def get(self):
@@ -255,7 +216,6 @@ urls = [
         (r"/alive", GameAliveHandler),
         (r"/rooms", RoomListHandler),
         (r"/", RoomListHandler),
-        (r"/gamesocket", GameSocketHandler),
         ]
 
 settings = dict(
