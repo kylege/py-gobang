@@ -61,6 +61,7 @@
         var room_status = {{ cur_room.status }};
         var game_pieces = new Array(); 
         var status_imgs = ['{{config.ConfigStaticPath}}/img/black.png', '{{config.ConfigStaticPath}}/img/white.png'];
+        var gamesocket;
 
         for(i=0; i<=gamec.grid_count; i++){
             game_pieces[i] = new Array();
@@ -119,19 +120,6 @@
             }
             gamemove(row, col);
 
-            $.post("/step?_t="+ new Date().getTime(), { pos: rowcol.join(','), room: room_name, up: my_piece } , function(data){
-                if(data.result){
-                    gamec.drawPiece(rowcol[0], rowcol[1], my_piece);
-                    is_waiting = true;
-                    game_pieces[rowcol[0]][rowcol[1]] = my_piece;
-                    $('#game-canvas').css('cursor', 'default');
-                    $('#piece_sign_bottom').removeClass('arrow-2-right');
-                    $('#piece_sign_top').addClass('arrow-2-right');
-                }else{
-                    alert(data.msg);
-                }
-            });
-
 	  	} 
         //哪一方该下棋的标记
         function initStartSign(){
@@ -149,6 +137,7 @@
                 room: room_name,
                 row: row,
                 col: col,
+                'type':'on_gamemove',
             }));
             gamec.drawPiece(row, col, my_piece);
             is_waiting = true;
@@ -246,15 +235,18 @@
             var WebSocket = window.WebSocket || window.MozWebSocket;
             if (WebSocket) {
                 try {
-                    var gamesocket = new WebSocket('ws://10.2.0.77:8888/gamesocket?room={{ cur_room.room_name }}');
-                } catch (e) {}
+                    gamesocket = new WebSocket('ws://{{config.ConfigDomain}}/gamesocket?room={{ cur_room.room_name }}&up={{my_piece_id}}');
+                } catch (e) {
+                    alert(e)
+                }
             }
 
             if (gamesocket) {
                 gamesocket.onopen = function(){  
-                    gamesocket.send(JSON.stringify({name:"yes"}));
+                    //gamesocket.send(JSON.stringify({name:"yes"}));
                 }  
                 gamesocket.onmessage = function(event) {
+                    // console.log(event.data);
                     var msg = JSON.parse(event.data)
                     switch(msg.type){
                         case 'online':
@@ -271,6 +263,8 @@
                             break;
                         case 'on_gameover':
                             on_gameover(msg);
+                            break;
+                        default:
                             break;
                     }
                 }
