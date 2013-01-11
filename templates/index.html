@@ -13,7 +13,7 @@
     		</div>
     		<div class="span3" id="gamestatus-div">
                 <div id="status-div">
-                    <h3>说明</h3>
+                    <h5>说明</h5>
                     <blockquote>
                         <span>将当前地址发给朋友，邀请他一起玩吧</span>
                     </blockquote>
@@ -21,10 +21,20 @@
                         <span>链接参数规则为：<br />/room-房间名</span>
                     </blockquote>
 
-                    <h3 id="status-h3">当前状态</h3>
+                    <h5>当前状态</h5>
                     <blockquote>
                         <span id="status-span" ></span>
                     </blockquote>
+                    <h5>聊天</h5>
+                    <div id="chat-div">
+                        <ul>
+                            <!-- <li class="mychat-li">msg1</li>
+                            <li class="hischat-li">msg1</li>
+                            <li class="hischat-li">msg1</li> -->
+                        </ul>
+
+                        <input title="" type="text" class="" id="chat-input" placeholder="对他说点什么吧" onkeydown="javascript: if(event.keyCode==13) sendchat(); ">
+                    </div>
                 </div>
     		</div>
     	</div>
@@ -132,6 +142,19 @@
             piece_signs.addClass('arrow-2-right');
         }
 
+        function sendchat(){
+            var content = $('#chat-input').val();
+            $('#chat-input').val('');            
+            if (!content || room_status != 1) return;
+            $('#chat-div ul').append('<li class="mychat-li">'+content+'</li>');
+            $('#chat-div ul').scrollTop($('#chat-div ul')[0].scrollHeight);
+            gamesocket.send(JSON.stringify({
+                room: room_name,
+                content: content,
+                'type':'on_chat',
+            }));
+        }
+
         function gamemove(row, col){
             gamec.drawPiece(row, col, my_piece);
             gamesocket.send(JSON.stringify({
@@ -162,6 +185,7 @@
          */
         function on_offline(msg){
             is_waiting = true;
+            room_status = 0;
             $('#status-span').text('对方离线');
             $('#game-canvas').css('cursor', 'default');
             $('#piece_sign_top').removeClass('arrow-2-right');
@@ -191,6 +215,7 @@
          */
         function on_gamestart(msg){
             is_waiting = false;
+            room_status = 1;
             $('#status-span').text('对方上线，游戏开始');
             gamec.canvas.width = gamec.canvas.width;
             gamec.drawGrid();
@@ -207,6 +232,7 @@
          */
         function on_gameover(msg){
             is_waiting = true;
+            room_status = 2;
             $('#status-span').text('游戏结束');
             $('#piece_sign_top').removeClass('arrow-2-right');
             $('#piece_sign_bottom').removeClass('arrow-2-right');
@@ -220,6 +246,20 @@
             }
             $('#alert-title').text('游戏结束');
             $('#alert-model-dom').data('id', 0).modal('show');
+        }
+        /**
+         * 聊天
+         * @param  {string} msg 
+         * @return {bool}     
+         */
+        function on_chat(msg){
+            $('#chat-div ul').append('<li class="hischat-li">'+msg.content+'</li>');
+            $('#chat-div ul').scrollTop($('#chat-div ul')[0].scrollHeight);
+        }
+
+        window.onbeforeunload = function () {
+            gamesocket.close();
+            // event.returnValue = "You will lose any unsaved content";
         }
 
         $(document).ready(function () {         
@@ -246,7 +286,7 @@
                     //gamesocket.send(JSON.stringify({name:"yes"}));
                 }  
                 gamesocket.onmessage = function(event) {
-                    // console.log(event.data);
+                    console.log(event.data);
                     var msg = JSON.parse(event.data)
                     switch(msg.type){
                         case 'online':
@@ -263,6 +303,9 @@
                             break;
                         case 'on_gameover':
                             on_gameover(msg);
+                            break;
+                        case 'on_chat':
+                            on_chat(msg);
                             break;
                         default:
                             break;

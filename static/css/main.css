@@ -22,6 +22,7 @@ body {
 #gamestatus-div {
 	min-height: 450px;
 	border-radius: 5px;
+	font-size: 12px;
 }
 #game-canvas {
 	float: right;
@@ -46,9 +47,6 @@ body {
 	background-repeat: no-repeat;
 	background-position: 15px,10px;
 }
-#status-h3 {
-	margin-top: 100px;
-}
 .rooms-title{
     margin-left: 50px;
 }
@@ -67,4 +65,19 @@ body {
 }
 #going-rooms-div{
 	color: #333;
+}
+#chat-div ul{
+	background-color: #BBD8E9;
+	border-radius: 5px;
+	margin: 0 0 10px 0;
+	padding: 0 0 0 30px;
+	height: 150px;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+#chat-div input {
+	width: auto;
+}
+.hischat-li {
+	color: #D14;
 }
