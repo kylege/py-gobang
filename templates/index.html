@@ -1,13 +1,22 @@
 {% extends "base.html" %}
 
+{% block css-block %}
+<style type="text/css">
+.gamemove-status {
+    background-image: url("{{config.ConfigStaticPath}}/img/face-smile.png");
+}
+</style>
+{% end %}
+
 {% block container-fluid %}
 
     <div class="container-fluid">
     	<div class="row-fluid">
     		<div class="span9" id="game-div">
     			<div id="gamebar-div">
-    				<div id="piece_sign_top" class=""><img id="his_status_img" src="" /></div>
-    				<div id="piece_sign_bottom" class=""><img id="my_status_img" src="" /></div>
+    				<div id="piece_sign_top" class=""><img id="his_status_img" src="{{config.ConfigStaticPath}}/img/help-browser-4.png" /></div>
+
+    				<div id="piece_sign_bottom" class=""><img id="my_status_img" src="{{config.ConfigStaticPath}}/img/help-browser-4.png" /></div>
     			</div>
     			<canvas id="game-canvas" width="460px" height="460px" >糟糕，好像你的浏览器不支持canvas。换个谷歌浏览器再来试试吧</canvas>
     		</div>
@@ -28,9 +37,7 @@
                     <h5>聊天</h5>
                     <div id="chat-div">
                         <ul>
-                            <!-- <li class="mychat-li">msg1</li>
-                            <li class="hischat-li">msg1</li>
-                            <li class="hischat-li">msg1</li> -->
+
                         </ul>
 
                         <input title="" type="text" class="" id="chat-input" placeholder="对他说点什么吧" onkeydown="javascript: if(event.keyCode==13) sendchat(); ">
@@ -133,13 +140,13 @@
 	  	} 
         //哪一方该下棋的标记
         function initStartSign(){
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
+            $('#piece_sign_top').removeClass('gamemove-status');
+            $('#piece_sign_bottom').removeClass('gamemove-status');
             var piece_signs = $('#piece_sign_top');
             if(my_piece == 1){
                 piece_signs = $('#piece_sign_bottom');   
             }
-            piece_signs.addClass('arrow-2-right');
+            piece_signs.addClass('gamemove-status');
         }
 
         function sendchat(){
@@ -166,8 +173,8 @@
             is_waiting = true;
             game_pieces[row][col] = my_piece;
             $('#game-canvas').css('cursor', 'default');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
-            $('#piece_sign_top').addClass('arrow-2-right');
+            $('#piece_sign_bottom').removeClass('gamemove-status');
+            $('#piece_sign_top').addClass('gamemove-status');
         }
 
         /**
@@ -188,8 +195,8 @@
             room_status = 0;
             $('#status-span').text('对方离线');
             $('#game-canvas').css('cursor', 'default');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
+            $('#piece_sign_top').removeClass('gamemove-status');
+            $('#piece_sign_bottom').removeClass('gamemove-status');
             $('#alert-title').text('对方离线');
             $('#alert-model-dom').data('id', 0).modal('show');
         }
@@ -204,8 +211,8 @@
             gamec.drawPiece(row, col, his_piece);
             game_pieces[row][col] = his_piece;
             $('#game-canvas').css('cursor', 'pointer');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').addClass('arrow-2-right');
+            $('#piece_sign_top').removeClass('gamemove-status');
+            $('#piece_sign_bottom').addClass('gamemove-status');
             is_waiting = false;
         }
         /**
@@ -220,6 +227,7 @@
             gamec.canvas.width = gamec.canvas.width;
             gamec.drawGrid();
             $('#his_status_img').attr('src', status_imgs[his_piece-1]);
+            $('#my_status_img').attr('src', status_imgs[my_piece-1]);
             if(my_piece == 1){  //黑先白后
                 $('#game-canvas').css('cursor', 'pointer');
             }
@@ -234,8 +242,8 @@
             is_waiting = true;
             room_status = 2;
             $('#status-span').text('游戏结束');
-            $('#piece_sign_top').removeClass('arrow-2-right');
-            $('#piece_sign_bottom').removeClass('arrow-2-right');
+            $('#piece_sign_top').removeClass('gamemove-status');
+            $('#piece_sign_bottom').removeClass('gamemove-status');
             $('#game-canvas').css('cursor', 'default'); 
             pid = parseInt(msg.up)
             if (pid > 0 && pid != my_piece){
@@ -266,9 +274,9 @@
             gamec.canvas.addEventListener("click", canvasClickHandler, false);
             gamec.drawGrid();
 
-            $('#my_status_img').attr('src', status_imgs[my_piece-1]);
+            // $('#my_status_img').attr('src', status_imgs[my_piece-1]);
             if(room_status != 0){
-               $('#his_status_img').attr('src', status_imgs[his_piece-1]);
+               // $('#his_status_img').attr('src', status_imgs[his_piece-1]);
                 initStartSign();
             }
           

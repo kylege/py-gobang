@@ -42,8 +42,7 @@ body {
 	margin-top: 300px;
 	padding-left: 60px;
 }
-.arrow-2-right {
-	background-image: url("http://lztian.com/py-gobang/static/img/arrow-2-right.png");
+.gamemove-status {
 	background-repeat: no-repeat;
 	background-position: 15px,10px;
 }
