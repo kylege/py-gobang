@@ -294,7 +294,7 @@
                     //gamesocket.send(JSON.stringify({name:"yes"}));
                 }  
                 gamesocket.onmessage = function(event) {
-                    console.log(event.data);
+                    // console.log(event.data);
                     var msg = JSON.parse(event.data)
                     switch(msg.type){
                         case 'online':
