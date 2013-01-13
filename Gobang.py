@@ -1,9 +1,5 @@
 #encoding=utf-8
 class BasicReturn():
-	result = True
-	code   = 0
-	msg    = ''
-	data   = None
 
 	def __init__(self, result=True, code=0, msg='', data=None):
 		self.result = result
