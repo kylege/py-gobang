@@ -153,7 +153,8 @@
             var content = $('#chat-input').val();
             $('#chat-input').val('');            
             if (!content || room_status != 1) return;
-            $('#chat-div ul').append('<li class="mychat-li">'+content+'</li>');
+            $('#chat-div ul').append('<li class="hischat-li"></li>');
+            $('#chat-div ul li:last-child').text(content);
             $('#chat-div ul').scrollTop($('#chat-div ul')[0].scrollHeight);
             gamesocket.send(JSON.stringify({
                 room: room_name,
@@ -261,7 +262,8 @@
          * @return {bool}     
          */
         function on_chat(msg){
-            $('#chat-div ul').append('<li class="hischat-li">'+msg.content+'</li>');
+            $('#chat-div ul').append('<li class="hischat-li"></li>');
+            $('#chat-div ul li:last-child').text(msg.content);            
             $('#chat-div ul').scrollTop($('#chat-div ul')[0].scrollHeight);
         }
 
