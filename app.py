@@ -11,10 +11,13 @@ import random
 
 import tornado
 import json
-from tornado import web, autoreload, websocket, ioloop, options
+from tornado import web, autoreload, websocket, ioloop
 from Config import Config
 from datetime import timedelta
 import logging
+from tornado.options import define, options  
+
+define("port", default=8888, help="Run server on a specific port", type=int)  
 
 '''
     进入房间页面
@@ -211,7 +214,7 @@ def main():
     printrooms.start()
     tornado.options.parse_command_line() # -log_file_prefix=your complete path/test_log@8091.log
     application = web.Application(urls, **settings)
-    application.listen(8888)
+    application.listen(options.port)
     # tornado.autoreload.start(tornado.ioloop.IOLoop.instance()) # add this to enable autorestart
     tornado.ioloop.IOLoop.instance().start()
 
