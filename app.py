@@ -158,6 +158,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         if not ret.result:
             return False
         else:
+            socket = GameSocketHandler.socket_handlers[self.hiskey]
+            socket.write_message({'type':'on_gamemove', 'row':row, 'col':col})
             if room.gobang.isGameOver(row, col):  #游戏结束
                 if isLog:  logging.info( "Room: %s gameover." % self.room_name.encode('UTF-8') )
                 socket = GameSocketHandler.socket_handlers[self.hiskey]
@@ -165,9 +167,6 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
                 self.write_message({'type':'on_gameover'})
                 self.close()
                 socket.close()
-            else:
-                socket = GameSocketHandler.socket_handlers[self.hiskey]
-                socket.write_message({'type':'on_gamemove', 'row':row, 'col':col})
         return True
 
     def _check_active_callback(self):
@@ -210,8 +209,8 @@ settings = dict(
 isLog = True
 
 def main():
-    printrooms = tornado.ioloop.PeriodicCallback(printAllRooms, GameSocketHandler.active_timeout)
-    printrooms.start()
+    # printrooms = tornado.ioloop.PeriodicCallback(printAllRooms, GameSocketHandler.active_timeout)
+    # printrooms.start()
     tornado.options.parse_command_line() # -log_file_prefix=your complete path/test_log@8091.log
     application = web.Application(urls, **settings)
     application.listen(options.port)
