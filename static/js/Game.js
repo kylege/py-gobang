@@ -63,25 +63,5 @@ var GameCanvas = function() {
 		
     	return true;
 	}
-	/**
-	 * 由鼠标所在的位置找出在第几个格子上
-	 * @param event e
-	 * @return int[]
-	 */
-	this.getPosFromCursor = function(e){
-		pos = getCurPosition(e);
-		cursorx = pos[0];
-		cursory = pos[1];
-		start_row = Math.floor((cursorx-this.out_width) / this.grid_width);
-		start_col = Math.floor((cursory-this.out_width) / this.grid_width);
-		if (((cursorx-this.out_width) % this.grid_width) > (this.grid_width/2)) {
-			start_row++;
-		}
-		if (((cursory-this.out_width) % this.grid_width) > (this.grid_width/2)) {
-			start_row++;
-		}
-		console.log(start_row, start_col);
-		return [start_row, start_col];
-	}
  
 }
