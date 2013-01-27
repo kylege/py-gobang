@@ -1,3 +1,5 @@
+var offline_timeout;
+
 var GameCanvas = function() {
 
 	this.PIECE_NONE = 0;
@@ -170,7 +172,9 @@ function on_offline(msg){
     $('#piece_sign_top').removeClass('gamemove-status');
     $('#piece_sign_bottom').removeClass('gamemove-status');
     $('#alert-title').text('对方离线');
-    $('#alert-model-dom').data('id', 0).modal('show');
+     offline_timeout = setTimeout(function(){
+       $('#alert-model-dom').data('id', 0).modal('show');
+    }, 2000);
 }
 /**
  * 对方走一步棋
@@ -193,6 +197,7 @@ function on_gamemove(msg){
  * @return {bool}     
  */
 function on_gamestart(msg){
+    clearTimeout(offline_timeout);
     is_waiting = false;
     room_status = 1;
     $('#status-span').text('对方上线，游戏开始');

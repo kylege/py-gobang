@@ -118,7 +118,8 @@ class GameSocketHandler(tornado.websocket.WebSocketHandler):
         except:
             logging.error( 'on_close Exception.' )
 
-        del GameSocketHandler.socket_handlers[self.mykey]
+        if self.mykey in GameSocketHandler.socket_handlers:
+            del GameSocketHandler.socket_handlers[self.mykey]
         self.chek_active.stop()
         return True
 
@@ -197,7 +198,7 @@ urls = [
         (r"/room-(.{1,200})", EnterRoomHandler),
         (r"/rooms", RoomListHandler),
         (r"/", RoomListHandler),
-        (r"/gamesocket", GameSocketHandler),
+        (r"/gs", GameSocketHandler),
         ]
 
 settings = dict(

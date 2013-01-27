@@ -79,7 +79,7 @@
         var game_pieces = new Array(); 
         var status_imgs = ['{{config.ConfigStaticPath}}/img/black.png', '{{config.ConfigStaticPath}}/img/white.png'];
         var gamesocket;
-        var wsurl = "ws://{{config.ConfigDomain}}/gamesocket?room={{ cur_room.room_name }}&up={{my_piece_id}}";
+        var wsurl = "ws://{{config.ConfigDomain}}/gs?room={{ cur_room.room_name }}&up={{my_piece_id}}";
 
     </script>
 
